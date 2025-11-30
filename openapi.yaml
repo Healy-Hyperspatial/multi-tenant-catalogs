@@ -131,6 +131,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/Item'
 
+  # ----------------------------------------------------------------------
+  # 8. SUB-CATALOG QUERYABLES (Critical for Filter Extension)
+  # ----------------------------------------------------------------------
+  /catalogs/{catalogId}/queryables:
+    parameters:
+      - $ref: '#/components/parameters/catalogId'
+    get:
+      summary: Get queryable fields for this sub-catalog
+      operationId: getCatalogQueryables
+      responses:
+        '200':
+          description: A JSON Schema of queryable fields
+          content:
+            application/schema+json:
+              schema:
+                $ref: '#/components/schemas/Queryables'
+
+  # ----------------------------------------------------------------------
+  # 9. SCOPED COLLECTION QUERYABLES
+  # ----------------------------------------------------------------------
+  /catalogs/{catalogId}/collections/{collectionId}/queryables:
+    parameters:
+      - $ref: '#/components/parameters/catalogId'
+      - $ref: '#/components/parameters/collectionId'
+    get:
+      summary: Get queryable fields for a specific collection
+      operationId: getCatalogCollectionQueryables
+      responses:
+        '200':
+          description: A JSON Schema of queryable fields
+          content:
+            application/schema+json:
+              schema:
+                $ref: '#/components/schemas/Queryables'
+
 components:
   parameters:
     catalogId:
