@@ -9,7 +9,7 @@
 - **Dependencies:**
   - [STAC API - Core](https://github.com/radiantearth/stac-api-spec/blob/main/core)
   - [STAC API - Collections](https://github.com/radiantearth/stac-api-spec/tree/main/ogcapi-features)
-  - - [STAC API - Transaction](https://github.com/radiantearth/stac-api-spec/tree/main/ogcapi-features/extensions/transaction)
+  - [STAC API - Transaction](https://github.com/radiantearth/stac-api-spec/tree/main/ogcapi-features/extensions/transaction)
 - **Owner**: @jonhealy1
 
 ## Introduction
@@ -140,15 +140,15 @@ This endpoint returns a JSON object structurally similar to a standard `/collect
 
 ### 2. The Global Root (`GET /`)
 
-The global root acts as a portal. Note the use of rel="catalogs" to link to the registry.
+The global root remains a standard STAC Landing Page. Note the addition of the `rel="catalogs"` link.
 
 ```json
 {
   "stac_version": "1.0.0",
   "type": "Catalog",
-  "id": "stac-federation",
-  "title": "Global Data Portal",
-  "description": "Entry point for the Federated STAC API.",
+  "id": "stac-api",
+  "title": "Standard STAC API with Federation",
+  "description": "A standard STAC API that also supports federated catalogs.",
   "conformsTo": [
     "https://api.stacspec.org/v1.0.0/core",
     "https://api.stacspec.org/v1.0.0-beta.1/catalogs-endpoint"
@@ -160,15 +160,21 @@ The global root acts as a portal. Note the use of rel="catalogs" to link to the 
       "href": "https://api.example.com/"
     },
     {
-      "rel": "catalogs",
-      "type": "application/json",
-      "href": "https://api.example.com/catalogs",
-      "title": "List of available catalogs"
-    },
-    {
       "rel": "service-desc",
       "type": "application/vnd.oai.openapi+json;version=3.0",
       "href": "https://api.example.com/api"
+    },
+    {
+      "rel": "data",
+      "type": "application/json",
+      "href": "https://api.example.com/collections",
+      "title": "Global Collections List"
+    },
+    {
+      "rel": "catalogs",
+      "type": "application/json",
+      "href": "https://api.example.com/catalogs",
+      "title": "Federated Catalogs Registry"
     }
   ]
 }
