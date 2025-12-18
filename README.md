@@ -138,10 +138,10 @@ This resource, and all of its sub-resources, represents a Collection within the 
 > All sub-resources can be considered, accordingly to other STAC API extensions that are implemented.
 > For example, if the [Filter](https://github.com/stac-api-extensions/filter) extension
 > is implemented and supports [Queryables](https://github.com/stac-api-extensions/filter#queryables),
-> then `rel="alternate"` links MAY be included in corresponding
-> `/catalogs/{catalogId}/collections/{collectionId}/queryables`,
-> `/collections/{collectionId}/queryables` and
-> `/queryables?collections={collectionId}` responses as well.
+> then `rel="alternate"` links MAY be included in corresponding responses as well:
+> - `/catalogs/{catalogId}/collections/{collectionId}/queryables`
+> - `/collections/{collectionId}/queryables`
+> - `/queryables?collections={collectionId}`
 
 > [!NOTE]
 > The `rel="alternate"` link is optional to allow implementation omitting the reference if such endpoint should be protected
