@@ -1,9 +1,9 @@
-# STAC API - Catalogs Endpoint Extension
+# STAC API - Multi-Tenant Catalogs Endpoint Extension
 
-- **Title:** Catalogs Endpoint
+- **Title:** Multi-Tenant Catalogs Endpoint
 - **Conformance Classes:**
   - `https://api.stacspec.org/v1.0.0/core` (required)
-  - `https://api.stacspec.org/v1.0.0-beta.1/catalogs-endpoint` (required)
+  - `https://api.stacspec.org/v1.0.0-beta.1/multi-tenant-catalogs` (required)
   - `https://api.stacspec.org/v1.0.0-rc.2/children` (recommended)
 - **Scope:** STAC API - Core
 - **Extension Maturity Classification:** Proposal
@@ -16,18 +16,25 @@
 
 ## Introduction
 
-This extension enables a **Virtual Organizational** architecture to enhance discoverability. It adds a dedicated **`/catalogs` endpoint** that serves as a machine-readable registry for **logical sub-catalogs**, allowing users to organize data into flexible, virtual hierarchies (e.g., by theme, semantics, or project) without duplicating the underlying data or altering the standard behavior of the API Root.
+This extension introduces a **Recursive Catalog Endpoint** (`/catalogs`) to the STAC API, enabling a **Multi-Tenant** architecture.
 
-In addition to discovery, this extension defines **Transactional** endpoints to create, update, and delete Catalogs and manage their **associations** with Collections, effectively acting as a management API for these virtual organizational structures.
+It adds a dedicated registry for **logical sub-catalogs**, allowing a single API instance to serve multiple, distinct catalog trees. Unlike the standard flat STAC structure (`Root -> Collections`), this extension enables a deep, **Recursive Hierarchy**, where catalogs can contain nested sub-catalogs for unlimited organizational depth (e.g., `Provider -> Theme -> Year -> Project`).
 
-In this model, the API supports a **Recursive Hierarchical** structure:
+While technically "Multi-Tenant" (capable of hosting isolated providers), this architecture inherently supports **Virtual Organization**. It allows Collections to be shared across multiple catalogs simultaneously (Poly-hierarchy), enabling users to create curated "playlists," semantic themes, or project-specific views without duplicating the underlying data.
 
-1.  **Global Root (`/`)**: The standard entry point. It remains a clean STAC Landing Page but includes a link to the **Catalogs Registry**.
-2.  **The Registry (`/catalogs`)**: The top-level list of root catalogs (e.g., "Forestry", "Oceanography").
-3.  **Sub-Catalogs (`/catalogs/{id}`)**: These behave as standard STAC Catalogs. Unlike the root, they can contain **nested Sub-Catalogs** (accessible via `/catalogs/{id}/catalogs`) in addition to Collections, allowing for deep, multi-level organizational trees (e.g., `Provider -> Theme -> Year`).
-   
+
+
+### The Management Plane
+This extension is not just for *viewing* hierarchy; it provides a **Transactional Management Plane** to build it. It defines endpoints to:
+* **Create** arbitrary catalog structures.
+* **Link** existing collections to multiple parents (Poly-hierarchy).
+* **Update** metadata and organization dynamically.
+
 ### Safety-First Architecture
-A core tenet of this extension is **Data Safety**. The `/catalogs` endpoints are strictly for **Organization**, while the core `/collections` endpoints are reserved for **Destruction**. Operations performed via the catalogs endpoint (like deleting a catalog) are guaranteed to never result in the accidental loss of Collection or Item data.
+A core tenet of this extension is **Data Safety**. It strictly separates "Organization" from "Data."
+
+* **The `/catalogs` endpoints are for Organization:** Operations here (like deleting a catalog) are **Non-Destructive**. You can disband a catalog or unlink a collection, and the extension guarantees that **no actual data (Collections or Items) is ever deleted**. If a resource is unlinked from its last parent, it is automatically adopted by the Root Catalog to prevent data loss.
+* **The `/collections` endpoints are for Data:** Actual destruction of data is reserved for the core STAC API endpoints.
 
 **Note on Dynamic Linking:**
 To ensure data consistency and reduce storage overhead, implementations SHOULD generate hierarchical links (e.g., `rel="child"`, `rel="parent"`) dynamically at runtime based on the requested endpoint context, rather than persisting static link objects in the database.
@@ -54,6 +61,7 @@ These endpoints allow for the dynamic creation and deletion of the federation st
 | Method | URI | Description |
 | :--- | :--- | :--- |
 | `POST` | `/catalogs` | **Create Root Catalog.** Registers a new top-level catalog. |
+| `PUT`  | `/catalogs/{catalogId}` | **Update Catalog.** Updates metadata (Title, Description). **Safety: Preserves existing hierarchy links.** |
 | `DELETE` | `/catalogs/{catalogId}` | **Disband Catalog.** Removes a sub-catalog. **Safety: Never deletes linked collections.** |
 | `POST` | `/catalogs/{catalogId}/catalogs` | **Create Sub-Catalog.** Creates a new catalog and links it as a child of this catalog. |
 | `DELETE` | `/catalogs/{catalogId}/catalogs/{subCatalogId}` | **Unlink Sub-Catalog.** Removes the link to the sub-catalog. **Safety: Does not delete the sub-catalog.** |
@@ -77,7 +85,12 @@ Implementations supporting the Transaction endpoints MUST adhere to the followin
 * **Body:** Accepts a standard [STAC Catalog](https://github.com/radiantearth/stac-spec/blob/master/catalog-spec/catalog-spec.md) JSON object.
 * **Behavior:** The API creates the Catalog resource and makes it available in the `/catalogs` registry list.
 
-### 2. Sub-Catalog Creation (`POST /catalogs/{id}/catalogs`)
+### 2. Catalog Update (`PUT /catalogs/{id}`)
+* **Body:** Accepts a standard STAC Catalog JSON object.
+* **Behavior:** Updates the metadata (Title, Description, etc.) of the catalog.
+* **Safety:** This operation MUST NOT modify the structural links (`parent_ids`) of the catalog unless explicitly handled, ensuring the catalog remains in its current hierarchy.
+
+### 3. Sub-Catalog Creation (`POST /catalogs/{id}/catalogs`)
 * **Body:** Accepts a standard STAC Catalog JSON object.
 * **Behavior:**
     1.  Creates the new Catalog resource.
@@ -85,28 +98,28 @@ Implementations supporting the Transaction endpoints MUST adhere to the followin
     3.  **Reverse Linking:** Automatically adds a `rel="child"` link in the parent Catalog `{id}` pointing to the new sub-catalog.
     4.  **Result:** The new catalog is discoverable via `GET /catalogs/{id}/catalogs` AND via the global registry `GET /catalogs` (unless explicitly hidden).
 
-### 3. Catalog Deletion (`DELETE /catalogs/{id}`)
+### 4. Catalog Deletion (`DELETE /catalogs/{id}`)
 * **Behavior (Disband):**
     * The Catalog object `{id}` is deleted from the database.
     * All Child Collections **AND Child Sub-Catalogs** linked to this catalog are **Unlinked**.
     * **Adoption:** If an unlinked child (Collection or Catalog) has no other parents, it MUST be automatically adopted by the Root Catalog to ensure data/structure is preserved.
     * **Constraint:** This operation MUST NOT delete Collection or Item data.
  
-### 4. Sub-Catalog Unlinking (`DELETE /catalogs/{id}/catalogs/{subId}`)
+### 5. Sub-Catalog Unlinking (`DELETE /catalogs/{id}/catalogs/{subId}`)
 * **Behavior (Unlink):**
     * The Sub-Catalog `{subId}` is **Unlinked** from the parent Catalog `{id}`.
     * **Safety:** The Sub-Catalog resource itself is **NOT deleted**.
     * **Adoption:** If the Sub-Catalog has no other parents (orphaned), it MUST be automatically adopted by the Root Catalog to ensure it remains discoverable.
     * **Constraint:** This operation only removes the specific hierarchical link between `{id}` and `{subId}`.
 
-### 5. Scoped Collection Creation (`POST /catalogs/{id}/collections`)
+### 6. Scoped Collection Creation (`POST /catalogs/{id}/collections`)
 * **Body:** Accepts a standard [STAC Collection](https://github.com/radiantearth/stac-spec/blob/master/collection-spec/collection-spec.md) JSON object.
 * **Behavior:**
     1.  Creates the Collection resource (or updates links if it exists).
     2.  **Automatic Linking:** Automatically registers the Collection as a child of `{catalogId}`.
     3.  **Reverse Linking:** Automatically adds a `rel="child"` link in the Catalog pointing to the new Collection.
 
-### 6. Scoped Collection Deletion (`DELETE .../collections/{id}`)
+### 7. Scoped Collection Deletion (`DELETE .../collections/{id}`)
 * **Behavior (Unlink):**
     * The Collection is **Unlinked** from the specific catalog `{catalogId}`.
     * If the Collection belongs to other catalogs, those links remain.
@@ -204,11 +217,11 @@ The global root remains a standard STAC Landing Page. Note the addition of the `
   "stac_version": "1.0.0",
   "type": "Catalog",
   "id": "stac-api",
-  "title": "Standard STAC API with Federation",
-  "description": "A standard STAC API that also supports federated catalogs.",
+  "title": "Standard STAC API with Multi-Tenancy",
+  "description": "A standard STAC API that also supports multi-tenant catalogs.",
   "conformsTo": [
     "https://api.stacspec.org/v1.0.0/core",
-    "https://api.stacspec.org/v1.0.0-beta.1/catalogs-endpoint"
+    "https://api.stacspec.org/v1.0.0-beta.1/multi-tenant-catalogs"
   ],
   "links": [
     {
@@ -231,7 +244,7 @@ The global root remains a standard STAC Landing Page. Note the addition of the `
       "rel": "catalogs",
       "type": "application/json",
       "href": "https://api.example.com/catalogs",
-      "title": "Federated Catalogs Registry"
+      "title": "Multi-Tenant Catalogs Registry"
     }
   ]
 }
