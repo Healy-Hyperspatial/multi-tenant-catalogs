@@ -220,7 +220,7 @@ This endpoint returns a JSON object structurally similar to a standard `/collect
         { "rel": "self", "href": "https://api.example.com/catalogs/catalog3" },
         { "rel": "root", "href": "https://api.example.com/" },
         { "rel": "parent", "href": "https://api.example.com/catalogs/catalog2" },
-        { "rel": "child", "href": "https://api.example.com/catalogs/catalog3/collections" }
+        { "rel": "data", "href": "https://api.example.com/catalogs/catalog3/collections" }
       ]
     },
     {
@@ -232,7 +232,7 @@ This endpoint returns a JSON object structurally similar to a standard `/collect
       "links": [
         { "rel": "self", "href": "https://api.example.com/catalogs/esa-sentinel" },
         { "rel": "root", "href": "https://api.example.com/" },
-        { "rel": "child", "href": "https://api.example.com/catalogs/esa-sentinel/collections" }
+        { "rel": "data", "href": "https://api.example.com/catalogs/esa-sentinel/collections" }
       ]
     }
   ],
