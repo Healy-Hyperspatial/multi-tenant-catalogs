@@ -80,7 +80,9 @@ Unlike a standard file system where a folder can only live in one path, this arc
 
 * **Example:** A `Sentinel-2` collection can be linked as a child of the `USGS` Catalog (Provider) AND the `Optical-Data` Catalog (Theme).
 * **Contextual Navigation (Scoped Route):** When accessing a Collection via a scoped endpoint (e.g., `/catalogs/{id}/collections/{col_id}`), the API MUST generate a single `rel="parent"` link pointing exclusively back to that specific `{catalogId}`. It MUST NOT list the collection's other parents, as this would break the user's current contextual breadcrumb trail in STAC Browser.
-* **Global Discovery (Global Route):** When accessing a Collection via the global root endpoint (`/collections/{collectionId}`), the API MUST include a `rel="parent"` link for every Catalog that claims this collection as a child. If the collection is not linked to any sub-catalogs, its `rel="parent"` MUST point to the Global Root (`/`).
+* **Global Discovery (Global Route):** When accessing a Collection via the global root endpoint (`/collections/{collectionId}`), the API MUST include a `rel="parent"` link for every Catalog that claims this collection as a child, **provided the current authenticated user has read access to those parent catalogs.**
+  * If the API implements Role-Based Access Control (RBAC), it MUST filter out links to restricted catalogs to prevent information disclosure.
+  * If the collection is not linked to any sub-catalogs, or if the user lacks access to all of its parent catalogs, the `rel="parent"` MUST fallback and point to the Global Root (`/`).
 
 ## Transaction Behavior
 
