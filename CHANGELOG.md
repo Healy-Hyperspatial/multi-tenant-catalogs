@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Poly-Hierarchy via `rel="related"`**: Implemented `rel="related"` links to expose alternative parents for collections and catalogs belonging to multiple catalogs simultaneously, preserving Directed Acyclic Graph (DAG) traversal for advanced clients.
+- **Canonical and Duplicate Links:** Added `rel="canonical"` to identify the primary global endpoint (e.g., `/collections/{id}`) for resources accessed via scoped catalog routes. Added `rel="duplicate"` to expose alternative scoped URIs where the identical resource can be accessed, aiding client-side deduplication.
 
 ### Changed
 - **Strict Single `rel="parent"` Linking**: Updated dynamic link generation across all endpoints to strictly enforce a single, contextual `rel="parent"` link based on the request route. This helps ensure backward compatibility with UI clients (like STAC Browser) and protects breadcrumb navigation.
