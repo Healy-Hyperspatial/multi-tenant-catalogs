@@ -80,7 +80,7 @@ Unlike a standard file system where a folder can only live in one path, this arc
 
 * **Example:** A `Sentinel-2` collection can be linked as a child of the `USGS` Catalog (Provider) AND the `Optical-Data` Catalog (Theme).
 * **Contextual Navigation (Scoped Route):** When accessing a Collection via a scoped endpoint (e.g., `/catalogs/{id}/collections/{col_id}`), the API MUST generate exactly one `rel="parent"` link pointing exclusively back to that specific `{catalogId}` to preserve the user's current contextual breadcrumb trail in UI clients. Alternative parents in the poly-hierarchy MUST be exposed as `rel="related"` links.
-* **Global Discovery (Global Route):** When accessing a Collection via the global root endpoint (`/collections/{collectionId}`), the API MUST generate exactly one `rel="parent"` link pointing to the Global Root (`/`). To expose the poly-hierarchy, the API MUST include a `rel="related"` link for every Catalog that claims this collection as a child, provided the current authenticated user has read access to those parent catalogs.
+* **Global Discovery (Global Route):** When accessing a Collection via the global root endpoint (`/collections/{collectionId}`), the API MUST generate exactly one `rel="parent"` link pointing to the Global Root (`/`). To expose the poly-hierarchy, the API MAY include a `rel="related"` link for every Catalog that claims this collection as a child, provided the current authenticated user has read access to those parent catalogs.
   * If the API implements Role-Based Access Control (RBAC), it MUST filter out links to restricted catalogs to prevent information disclosure.
 
 ## Transaction Behavior
