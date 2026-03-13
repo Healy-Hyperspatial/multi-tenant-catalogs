@@ -277,6 +277,9 @@ paths:
         It SHOULD include a `rel="canonical"` link pointing to the global `/collections/{collectionId}` 
         endpoint, and MAY include `rel="duplicate"` links pointing to other scoped paths where 
         this identical resource can be accessed.
+        
+        Conversely, `/collections/{collectionId}` MAY also include `rel="duplicate"` links to their 
+        `/catalogs/{catalogId}/collections/{collectionId}` counterparts.
       operationId: getCatalogCollection
       responses:
         '200':

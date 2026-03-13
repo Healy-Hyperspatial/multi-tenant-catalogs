@@ -201,7 +201,7 @@ This resource, and all of its sub-resources, represents a Collection within the 
 > - `/collections/{collectionId}/queryables`
 > - `/queryables?collections={collectionId}`
 
-> [!NOTE]
+> [!WARNING]
 > The `rel="duplicate"` link is optional to allow implementations to omit the reference if such endpoints should be protected and hidden from clients. Otherwise, it is RECOMMENDED to provide these links for better interoperability and discoverability, allowing clients to deduplicate resources in their UIs.
 
 ## Response Examples
