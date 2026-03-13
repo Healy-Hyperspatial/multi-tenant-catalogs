@@ -3,8 +3,8 @@
 - **Title:** Multi-Tenant Catalogs Endpoint
 - **Conformance Classes:**
   - `https://api.stacspec.org/v1.0.0/core` (required)
-  - `https://api.stacspec.org/v1.0.0-beta.3/multi-tenant-catalogs` (required)
-  - `https://api.stacspec.org/v1.0.0-beta.3/multi-tenant-catalogs/transaction` (optional)
+  - `https://api.stacspec.org/v1.0.0-beta.4/multi-tenant-catalogs` (required)
+  - `https://api.stacspec.org/v1.0.0-beta.4/multi-tenant-catalogs/transaction` (optional)
   - `https://api.stacspec.org/v1.0.0-rc.2/children` (recommended)
 - **Scope:** STAC API - Core
 - **Extension Maturity Classification:** Proposal
@@ -142,7 +142,7 @@ This endpoint supports two distinct modes of operation: **Creation** and **Linki
 * **Condition:** The `id` already exists in the database.
 * **Behavior:**
     1.  Does **not** overwrite the existing collection metadata.
-    2.  **Establishes Reciprocal Links:** Adds `{catalogId}` to the collection's parent list, AND adds a `rel="child"` link to the Catalog pointing to the collection.
+    2.  **Establishes Reciprocal Links:** Adds `{catalogId}` to the collection's internal parent list (which dynamically resolves to `rel="parent"` or `rel="related"` links at read-time).
     3.  Returns `200 OK` to indicate a successful link (vs `201 Created` for new resources).
     4.  **Error Handling:** If the `id` does not exist when using this minimal payload, the API MUST return `404 Not Found`.
 
@@ -178,7 +178,7 @@ This resource acts as the Landing Page for the provider or a nested sub-folder.
 This resource represents a Collection accessible via the standard STAC core endpoint (flat, global discovery).
 * `rel="self"`: MUST point to `/collections/{collectionId}`.
 * `rel="parent"`: MUST point to **exactly one** parent, which is the Global Root (`/`).
-* `rel="related"`: MUST include a link for every Sub-Catalog that claims this collection as a child, exposing the poly-hierarchy.
+* `rel="related"`: MAY include a link for every Sub-Catalog that claims this collection as a child, exposing the poly-hierarchy.
 * `rel="root"`: MUST point to the Global Root (`/`).
 
 ### 4. The Scoped Collection Endpoints (`/catalogs/{catalogId}/collections/{collectionId}/*`)
@@ -186,24 +186,23 @@ This resource, and all of its sub-resources, represents a Collection within the 
 * `rel="self"`: MUST point to `/catalogs/{catalogId}/collections/{collectionId}`.
 * `rel="parent"`: MUST point **exclusively** to `/catalogs/{catalogId}` (the specific parent through which the user navigated). It MUST NOT list other parents as `rel="parent"`, as this breaks UI breadcrumbs.
 * `rel="related"`: MAY be included to expose the collection's alternative parents in the poly-hierarchy.
-* `rel="alternate"`: MAY be provided to point to the corresponding `/collections/{collectionId}/*` endpoints, and vice versa.
+* `rel="canonical"`: SHOULD point to the global `/collections/{collectionId}` endpoint, identifying it as the primary, authoritative URL for the resource regardless of which catalog it was accessed through.
+* `rel="duplicate"`: MAY be provided to point to other scoped paths where this identical resource can be accessed.
 
 > [!NOTE]
 > **Contextual vs. Global Navigation:** The distinction between scoped and global endpoints is critical for STAC Browser and other UI clients. Scoped endpoints lock the breadcrumb trail to a single parent for clarity, while global endpoints expose the full poly-hierarchy graph. Implementations MUST respect this distinction when generating `rel="parent"` and `rel="related"` links.
 
 > [!NOTE]
-> All sub-resources can be considered, accordingly to other STAC API extensions that are implemented.
+> All sub-resources can be considered accordingly to other STAC API extensions that are implemented.
 > For example, if the [Filter](https://github.com/stac-api-extensions/filter) extension
 > is implemented and supports [Queryables](https://github.com/stac-api-extensions/filter#queryables),
-> then `rel="alternate"` links MAY be included in corresponding responses as well:
+> then `rel="canonical"` and `rel="duplicate"` links MAY be included in corresponding responses to map between scoped and global endpoints:
 > - `/catalogs/{catalogId}/collections/{collectionId}/queryables`
 > - `/collections/{collectionId}/queryables`
 > - `/queryables?collections={collectionId}`
 
-> [!NOTE]
-> The `rel="alternate"` link is optional to allow implementation omitting the reference if such endpoint should be protected
-> and hidden from clients. Otherwise, it is RECOMMENDED to provide this link for better interoperability and discoverability
-> of clients that are typically aware of the core STAC API structure.
+> [!WARNING]
+> The `rel="duplicate"` link is optional to allow implementations to omit the reference if such endpoints should be protected and hidden from clients. Otherwise, it is RECOMMENDED to provide these links for better interoperability and discoverability, allowing clients to deduplicate resources in their UIs.
 
 ## Response Examples
 
@@ -266,8 +265,8 @@ The global root remains a standard STAC Landing Page. Note the addition of the `
   "description": "A standard STAC API that also supports multi-tenant catalogs.",
   "conformsTo": [
     "https://api.stacspec.org/v1.0.0/core",
-    "https://api.stacspec.org/v1.0.0-beta.3/multi-tenant-catalogs",
-    "https://api.stacspec.org/v1.0.0-beta.3/multi-tenant-catalogs/transaction"
+    "https://api.stacspec.org/v1.0.0-beta.4/multi-tenant-catalogs",
+    "https://api.stacspec.org/v1.0.0-beta.4/multi-tenant-catalogs/transaction"
   ],
   "links": [
     {
@@ -328,6 +327,48 @@ This endpoint returns a list of both child Catalogs and child Collections.
     {
       "rel": "next",
       "href": "https://api.example.com/catalogs/c1/children?token=..."
+    }
+  ]
+}
+```
+
+### 4. A Scoped Collection (`GET /catalogs/{catalogId}/collections/{collectionId}`)
+
+This example demonstrates a Collection accessed via a specific sub-catalog (`forestry`). It shows the single contextual `parent`, alternative parents via `related`, and the `canonical` global URL.
+
+```json
+{
+  "id": "sentinel-2-l2a",
+  "type": "Collection",
+  "stac_version": "1.0.0",
+  "description": "Sentinel-2 Level-2A data.",
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://api.example.com/catalogs/forestry/collections/sentinel-2-l2a"
+    },
+    {
+      "rel": "root",
+      "href": "https://api.example.com/"
+    },
+    {
+      "rel": "parent",
+      "href": "https://api.example.com/catalogs/forestry",
+      "title": "Forestry Catalog (Contextual Parent)"
+    },
+    {
+      "rel": "related",
+      "href": "https://api.example.com/catalogs/esa-optical",
+      "title": "ESA Optical Data (Alternative Parent)"
+    },
+    {
+      "rel": "canonical",
+      "href": "https://api.example.com/collections/sentinel-2-l2a",
+      "title": "Global Collection Endpoint"
+    },
+    {
+      "rel": "duplicate",
+      "href": "https://api.example.com/catalogs/esa-optical/collections/sentinel-2-l2a"
     }
   ]
 }
