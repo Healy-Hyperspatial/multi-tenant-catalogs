@@ -12,7 +12,7 @@
   - [STAC API - Core](https://github.com/radiantearth/stac-api-spec/blob/main/core)
   - [STAC API - Collections](https://github.com/radiantearth/stac-api-spec/tree/main/ogcapi-features)
   - [STAC API - Children](https://github.com/stac-api-extensions/children)
-  - [STAC API - Transaction](https://github.com/radiantearth/stac-api-spec/tree/main/ogcapi-features/extensions/transaction) (Reference pattern)
+  - [STAC API - Transaction](https://github.com/radiantearth/stac-api-spAec/tree/main/ogcapi-features/extensions/transaction) (Reference pattern)
 - **Owner**: @jonhealy1
 
 ## Introduction
@@ -79,7 +79,7 @@ This extension explicitly supports **Poly-hierarchy**, allowing a single STAC Co
 Unlike a standard file system where a folder can only live in one path, this architecture allows for logical grouping across different dimensions without duplicating data. 
 
 * **Example:** A `Sentinel-2` collection can be linked as a child of the `USGS` Catalog (Provider) AND the `Optical-Data` Catalog (Theme).
-* **Contextual Navigation (Scoped Route):** When accessing a Collection via a scoped endpoint (e.g., `/catalogs/{id}/collections/{col_id}`), the API MUST generate exactly one `rel="parent"` link pointing exclusively back to that specific `{catalogId}` to preserve the user's current contextual breadcrumb trail in UI clients. Alternative parents in the poly-hierarchy MUST be exposed as `rel="related"` links.
+* **Contextual Navigation (Scoped Route):** When accessing a Collection via a scoped endpoint (e.g., `/catalogs/{id}/collections/{col_id}`), the API MUST generate exactly one `rel="parent"` link pointing exclusively back to that specific `{catalogId}` to preserve the user's current contextual breadcrumb trail in UI clients. Alternative parents in the poly-hierarchy MAY be exposed as `rel="related"` links.
 * **Global Discovery (Global Route):** When accessing a Collection via the global root endpoint (`/collections/{collectionId}`), the API MUST generate exactly one `rel="parent"` link pointing to the Global Root (`/`). To expose the poly-hierarchy, the API MAY include a `rel="related"` link for every Catalog that claims this collection as a child, provided the current authenticated user has read access to those parent catalogs.
   * If the API implements Role-Based Access Control (RBAC), it MUST filter out links to restricted catalogs to prevent information disclosure.
 
@@ -170,7 +170,7 @@ This is the entry point.
 This resource acts as the Landing Page for the provider or a nested sub-folder.
 * `rel="self"`: MUST point to `/catalogs/{catalogId}`.
 * `rel="parent"`: MUST point to **exactly one** immediate parent Catalog that this sub-catalog was accessed through. If it is a top-level sub-catalog, it MUST point to the Global Root (`/`).
-* `rel="related"`: If the catalog is part of a poly-hierarchy (has multiple parents), the API MUST include this link for all *other* parent catalogs to expose the broader graph.
+* `rel="related"`: If the catalog is part of a poly-hierarchy (has multiple parents), the API MAY include this link for all *other* parent catalogs to expose the broader graph.
 * `rel="root"`: MUST point to the Global Root (`/`) to maintain a single navigation tree.
 * `rel="child"`: MUST point to any immediate Sub-Catalogs (`/catalogs/{subId}`) AND any linked Collections (`/catalogs/{catalogId}/collections/{collectionId}`).
 
